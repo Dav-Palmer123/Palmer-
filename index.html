@@ -1,0 +1,122 @@
+p<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Patient Notification System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input, button {
+      margin: 5px;
+      padding: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Patient Checkup Notification Form</h2>
+  <form id="patientForm">
+    <input type="text" id="patientNumber" placeholder="Patient Number" required />
+    <input type="text" id="name" placeholder="Name" required />
+    <input type="number" id="age" placeholder="Age" required />
+    <input type="text" id="location" placeholder="Location" required />
+    <input type="date" id="checkupDate" required />
+    <input type="time" id="checkupTime" required />
+    <button type="submit">Add Patient</button>
+  </form>
+
+  <h3>Patient Records</h3>
+  <table id="patientTable">
+    <thead>
+      <tr>
+        <th>Patient No</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Location</th>
+        <th>Date</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const form = document.getElementById('patientForm');
+    const tableBody = document.querySelector('#patientTable tbody');
+    let patients = JSON.parse(localStorage.getItem('patients')) || [];
+
+    // Ask for notification permission
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    // Render patients
+    function renderPatients() {
+      tableBody.innerHTML = '';
+      patients.forEach(patient => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${patient.number}</td>
+          <td>${patient.name}</td>
+          <td>${patient.age}</td>
+          <td>${patient.location}</td>
+          <td>${patient.date}</td>
+          <td>${patient.time}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Schedule notification
+    function scheduleNotification(patient) {
+      const target = new Date(`${patient.date}T${patient.time}`);
+      const now = new Date();
+      const diff = target - now;
+
+      if (diff > 0) {
+        setTimeout(() => {
+          if (Notification.permission === 'granted') {
+            new Notification(`Hey ${patient.name} 👋`, {
+              body: "We would like to inform you of your upcoming review. Always remember that your health is important 💙. Bye 👋.",
+            });
+          }
+        }, diff);
+      }
+    }
+
+    // Save and schedule on form submit
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const patient = {
+        number: document.getElementById('patientNumber').value,
+        name: document.getElementById('name').value,
+        age: document.getElementById('age').value,
+        location: document.getElementById('location').value,
+        date: document.getElementById('checkupDate').value,
+        time: document.getElementById('checkupTime').value,
+      };
+      patients.push(patient);
+      localStorage.setItem('patients', JSON.stringify(patients));
+      scheduleNotification(patient);
+      renderPatients();
+      form.reset();
+    });
+
+    // Schedule all on load
+    patients.forEach(scheduleNotification);
+    renderPatients();
+  </script>
+
+</body>
+</html>
